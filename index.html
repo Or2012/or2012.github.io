@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Play Gravity Flip, a free neon arcade game. Flip gravity, dodge gates, collect coins, and compete for a spot in the global Top 100 leaderboard.">
+<meta name="theme-color" content="#050719">
+<title>Gravity Flip — Free Arcade Game & Global Leaderboard</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#050719;color:#f4fbff;font-family:Consolas,monospace}
+body{display:flex;flex-direction:column;align-items:center;padding:clamp(10px,1.5vw,24px);gap:14px}
+header,main,footer{width:min(100%,1500px)}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+h1{font-size:clamp(22px,4vw,34px);margin:6px 0;color:#46f5ff;text-shadow:0 0 20px #46f5ff55}
+.tag{color:#a7bfdc;font-size:13px}
+#layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start}
+canvas{display:block;width:100%;height:auto;border:1px solid #236087;border-radius:10px;box-shadow:0 0 35px #172c6b55;background:#050719;touch-action:manipulation}
+.panel{border:1px solid #183b65;border-radius:10px;background:#090f28;padding:14px}
+.panel h2{font-size:18px;margin:0 0 12px;color:#46f5ff}
+.row{display:flex;gap:7px;margin:8px 0}
+input,button{font:inherit;border-radius:6px;border:1px solid #31557c;padding:10px;background:#101b3b;color:#f4fbff;min-width:0}
+input{width:100%}button{cursor:pointer;background:#103d58;border-color:#46f5ff;font-weight:bold}button:hover{filter:brightness(1.2)}button:disabled{opacity:.5;cursor:wait}
+#status{min-height:38px;font-size:12px;color:#a7bfdc;line-height:1.45;margin-top:8px}
+#leaderboard{padding:8px 10px;list-style:none;margin:8px 0;max-height:420px;overflow:auto;border:1px solid #23466f;border-radius:10px;background:linear-gradient(180deg,#0b1634,#070d22);box-shadow:inset 0 0 22px #193c7022}
+#leaderboard li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid #1b3154;font-size:13px;background:linear-gradient(90deg,#101b3b44,transparent)}#leaderboard li:nth-child(1){background:linear-gradient(90deg,#ffe15e22,transparent);border-radius:6px}#leaderboard li:nth-child(2){background:linear-gradient(90deg,#c0d8ff12,transparent)}#leaderboard li:nth-child(3){background:linear-gradient(90deg,#ff9a5e12,transparent)}
+#leaderboard .rank{color:#79bfff;font-weight:bold;text-align:center}#leaderboard li:first-child .rank{color:#ffe15e}#leaderboard .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold}#leaderboard .score{color:#ffe15e;font-weight:bold;text-shadow:0 0 10px #ffe15e22}
+#gamehelp{font-size:12px;color:#a7bfdc;line-height:1.6;margin-top:8px}
+footer{color:#7995b8;font-size:12px;line-height:1.6}
+@media(max-width:900px){#layout{grid-template-columns:1fr}.panel{order:2}#leaderboard{max-height:250px}#shopItems{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+#mobileControls{display:none}
+@media(max-width:700px){body{padding:8px;gap:8px}header,main,footer{width:100%}h1{font-size:24px}.tag{font-size:11px}#gamehelp{font-size:10px}}
+body.game-fullscreen{padding:0;gap:0;overflow:hidden}body.game-fullscreen header,body.game-fullscreen aside,body.game-fullscreen footer,body.game-fullscreen #gamehelp{display:none!important}body.game-fullscreen #layout,body.game-fullscreen #layout>section{display:block;width:100vw;height:100dvh;min-height:100dvh}body.game-fullscreen canvas{width:100vw;height:100dvh;max-height:100dvh;object-fit:fill;border:0;border-radius:0;box-shadow:none}body.game-fullscreen #mobileControls{display:flex;position:fixed;z-index:10;left:10px;right:10px;bottom:10px;justify-content:space-between;gap:10px;pointer-events:none}body.game-fullscreen #mobileControls button{pointer-events:auto;opacity:.88;padding:10px 14px;background:#103d58e8}
+
+
+</style>
+</head>
+<body>
+<header><div><h1>GRAVITY FLIP</h1><div class="tag">Flip gravity. Dodge the gates. Make the Top 100.</div></div><div class="head-actions"><button id="musicToggle" type="button" aria-pressed="false">♫ Music: Off</button><button id="fullscreenToggle" type="button">⛶ Fullscreen</button><div class="tag">FREE BROWSER ARCADE</div></div></header>
+<main id="layout">
+<section>
+<canvas id="game" width="1000" height="650" aria-label="Gravity Flip game"></canvas>
+<div id="gamehelp">SPACE / W / ↑ / CLICK = FLIP GRAVITY · P = PAUSE · ESC = pause</div>
+</section>
+<div id="mobileControls"><button id="exitFullscreen" type="button">✕ Exit</button><button id="touchFlip" type="button">FLIP GRAVITY ↕</button></div>
+<aside class="panel">
+<h2>🪙 COIN SHOP</h2>
+<div class="tag">Bank: <strong id="coinBank">0</strong> coins · Cosmetics only — no buffs!</div>
+<div class="row"><button id="shopShips" type="button" style="width:50%">🚀 Spaceships</button><button id="shopThemes" type="button" style="width:50%">🌌 Themes</button></div>
+<div id="shopItems" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 18px"></div>
+<h2>🔐 CHEAT CODE</h2>
+<div class="tag">Enter a secret code to unlock a coin bonus.</div>
+<div class="row"><input id="cheatInput" maxlength="32" placeholder="Enter cheat code" aria-label="Cheat code" autocomplete="off" autocapitalize="none"></div>
+<div class="row"><button id="redeemCheat" type="button" style="width:100%;border-color:#ffe15e">Redeem code</button></div>
+<div id="cheatStatus" class="tag" role="status" style="min-height:18px"></div>
+<h2>🏆 GLOBAL TOP 100</h2>
+<div class="tag">One leaderboard entry per username. Names can be changed.</div>
+<div class="row"><input id="username" maxlength="16" placeholder="Choose your username" autocomplete="nickname" aria-label="Your username"></div>
+<div class="row"><button id="saveName" style="width:100%">Save / change username</button></div>
+<div id="status" role="status">Leaderboard setup needed — follow README.md to connect your free database.</div>
+<div id="boostChoice" class="row" style="display:none;gap:8px;flex-direction:column"></div>
+<ol id="leaderboard"><li><span class="rank">—</span><span class="name">Leaderboard not connected yet</span><span class="score">—</span></li></ol>
+<div class="row"><button id="refresh" style="width:50%">Refresh leaderboard</button><button id="deleteRecord" style="width:50%;border-color:#ff4baa">Delete my record</button></div>
+
+<h2 style="margin-top:22px">🛠️ CREATOR CONSOLE</h2><div class="tag">Hidden creator tools · press the button and enter your creator code.</div><div class="row"><button id="creatorOpen" style="width:100%;border-color:#ffe15e">🔒 Creator / Admin Panel</button></div><section id="creatorPanel" hidden style="border:1px solid #ffe15e;border-radius:9px;padding:12px;background:#14172b"><h2>👑 CREATOR PANEL</h2><div id="creatorStats" class="tag">Unlock the panel to load stats.</div><div class="row"><input id="adminSearch" placeholder="Search player name" aria-label="Search player names"></div><div class="row"><button id="adminRefresh" style="width:100%">Refresh all available scores</button></div><ol id="adminRows" style="max-height:300px;overflow:auto;padding-left:24px"></ol><div class="row"><button id="adminExport" style="width:100%">Export visible data (CSV)</button></div><div class="tag">This panel is read-only. For truly private admin access, the secret must be checked on a server, not in browser code.</div></section>
+</aside>
+</main>
+<footer>
+<strong>How to play:</strong> Press Space or click to reverse gravity. Touching the roof or floor is safe; gates are not. Collect coins for bonus points. After crashing, flip or click to try again.<br>
+Your username is reserved in the global database. New personal bests and qualifying Top 100 scores submit automatically. Public score submissions can be faked, so this is a casual leaderboard, not a cheat-proof tournament.
+</footer>
+<script>
+// === DATABASE SETUP ===
+// Supabase Project URL and public publishable key.
+// These are designed to be public website settings. NEVER paste a service_role key.
+const SUPABASE_URL = "https://aooqckyimhoohergebuy.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_-MNYUhYcK09hjxxUwe-ZHA_lHxnE8C2";
+
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const W=1000,H=650,C={cyan:'#46f5ff',pink:'#ff4baa',purple:'#885bff',yellow:'#ffe15e',white:'#f5fbff'};
+const COIN_BANK_KEY='gravityFlipCoinBankV1', OWNED_SHIPS_KEY='gravityFlipOwnedShipsV1', OWNED_THEMES_KEY='gravityFlipOwnedThemesV1', SHIP_KEY='gravityFlipShipV1', THEME_KEY='gravityFlipThemeV1';
+const ships=[{id:'default',name:'Nova',cost:0,body:'#1a659b',glow:'#46f5ff',accent:'#ff4baa'},{id:'comet',name:'Comet',cost:120,body:'#177a57',glow:'#5bffbd',accent:'#ffe15e'},{id:'rose',name:'Rose Rocket',cost:250,body:'#9a286f',glow:'#ff72c8',accent:'#ffe1f2'},{id:'solar',name:'Solar Flare',cost:450,body:'#a34d12',glow:'#ffb347',accent:'#fff078'},{id:'phantom',name:'Phantom',cost:700,body:'#5b4ca8',glow:'#b9a6ff',accent:'#e8e2ff'}];
+const themes=[{id:'space',name:'Deep Space',cost:0,bg:'#050719',nebula:'#4b1eb4',stars:'#73b4ff',grid:'#101c3b'},{id:'ocean',name:'Ocean',cost:180,bg:'#031a27',nebula:'#006c85',stars:'#8ff4ff',grid:'#0a3446'},{id:'sunset',name:'Sunset',cost:300,bg:'#210d28',nebula:'#a62b73',stars:'#ffc1dc',grid:'#421c3f'},{id:'forest',name:'Aurora',cost:500,bg:'#061c18',nebula:'#16805f',stars:'#9affd2',grid:'#10382d'},{id:'gold',name:'Golden Nebula',cost:850,bg:'#201707',nebula:'#a56a12',stars:'#ffe6a1',grid:'#443014'}];
+function readSet(key,initial){try{return new Set(JSON.parse(localStorage.getItem(key)||JSON.stringify(initial)))}catch{return new Set(initial)}}
+let coinBank=Number(localStorage.getItem(COIN_BANK_KEY)||0);if(!Number.isFinite(coinBank)||coinBank<0)coinBank=0;
+let ownedShips=readSet(OWNED_SHIPS_KEY,['default']),ownedThemes=readSet(OWNED_THEMES_KEY,['space']);let activeShip=localStorage.getItem(SHIP_KEY)||'default',activeTheme=localStorage.getItem(THEME_KEY)||'space',shopMode='ships';
+function saveCosmetics(){localStorage.setItem(COIN_BANK_KEY,String(coinBank));localStorage.setItem(OWNED_SHIPS_KEY,JSON.stringify([...ownedShips]));localStorage.setItem(OWNED_THEMES_KEY,JSON.stringify([...ownedThemes]));localStorage.setItem(SHIP_KEY,activeShip);localStorage.setItem(THEME_KEY,activeTheme);$('coinBank').textContent=coinBank.toLocaleString();}
+
+const stars=[];let g,elapsed=0,last=performance.now(),paused=false,lastScore=0,runSubmitted=false;
+const $=id=>document.getElementById(id);
+for(let i=0;i<130;i++)stars.push({x:Math.random()*W,y:Math.random()*H,s:20+Math.random()*90,r:Math.random()*2+.5,p:Math.random()*6.28});
+function reset(){g={y:H/2,vy:0,grav:1,obs:[],coins:[],specials:[],parts:[],dist:0,score:0,coinCount:0,speed:300,spawn:.6,pillarCount:0,dead:false,flash:0};paused=false;runSubmitted=false}
+reset();
+function rand(a,b){return a+Math.random()*(b-a)}
+function glow(x,y,r,rgba){let gr=ctx.createRadialGradient(x,y,1,x,y,r);gr.addColorStop(0,rgba);gr.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function burst(x,y,color,n=14){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,v=rand(50,260),life=rand(.25,.75);g.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life,max:life,color,r:rand(2,5)})}}
+function flip(){if(g.dead){lastScore=g.score;reset();return}if(paused)return;g.grav*=-1;g.flash=.16;burst(135,g.y,g.grav<0?C.cyan:C.pink,7)}
+function keydown(e){if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(['Space','ArrowUp','KeyW'].includes(e.code))flip();if(e.code==='KeyP'&&!g.dead)paused=!paused;if(e.code==='Escape')paused=true;if(e.code==='KeyR'&&g.dead){lastScore=g.score;reset()}}
+window.addEventListener('keydown',keydown);canvas.addEventListener('pointerdown',flip);
+function drawShip(x,y,tilt=0){
+ const ship=ships.find(v=>v.id===activeShip)||ships[0];
+ ctx.save();ctx.translate(x,y);ctx.rotate(tilt*Math.PI/180);
+ // Compact layered engine glow, not a trailing effect.
+ glow(0,2,39,ship.glow+'30');
+ // Rear stabilizers / wings
+ const wing=ctx.createLinearGradient(-30,-2,30,22);wing.addColorStop(0,'#18294b');wing.addColorStop(.5,ship.body);wing.addColorStop(1,'#111b35');
+ ctx.fillStyle=wing;ctx.strokeStyle=ship.glow;ctx.lineWidth=1.8;
+ ctx.beginPath();ctx.moveTo(-8,-5);ctx.lineTo(-31,10);ctx.lineTo(-26,25);ctx.lineTo(-8,19);ctx.closePath();ctx.fill();ctx.stroke();
+ ctx.beginPath();ctx.moveTo(8,-5);ctx.lineTo(31,10);ctx.lineTo(26,25);ctx.lineTo(8,19);ctx.closePath();ctx.fill();ctx.stroke();
+ // Engine bells with a steady core glow (no random flicker trail)
+ for(const ex of [-12,0,12]){ctx.fillStyle='#10182d';ctx.strokeStyle=ship.accent;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ex-4,17);ctx.lineTo(ex+4,17);ctx.lineTo(ex+3,27);ctx.lineTo(ex,30);ctx.lineTo(ex-3,27);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle=ship.glow;ctx.globalAlpha=.9;ctx.fillRect(ex-2,22,4,4);ctx.globalAlpha=1;}
+ // Main armored hull
+ let hull=ctx.createLinearGradient(-22,-20,23,21);hull.addColorStop(0,'#f7ffff');hull.addColorStop(.18,ship.glow);hull.addColorStop(.48,ship.body);hull.addColorStop(.78,'#172747');hull.addColorStop(1,'#080f25');
+ ctx.fillStyle=hull;ctx.strokeStyle='#dffcff';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(13,-15);ctx.lineTo(21,8);ctx.lineTo(15,23);ctx.lineTo(0,28);ctx.lineTo(-15,23);ctx.lineTo(-21,8);ctx.lineTo(-13,-15);ctx.closePath();ctx.fill();ctx.stroke();
+ // Central plated nose
+ ctx.fillStyle=ship.accent;ctx.globalAlpha=.9;ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(6,-12);ctx.lineTo(0,-4);ctx.lineTo(-6,-12);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+ // Cockpit glass with specular highlight
+ const glass=ctx.createLinearGradient(-8,-14,8,9);glass.addColorStop(0,'#ffffff');glass.addColorStop(.22,'#8afaff');glass.addColorStop(.6,'#2379a9');glass.addColorStop(1,'#07172f');ctx.fillStyle=glass;ctx.strokeStyle='#c6ffff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(8,-1);ctx.lineTo(5,9);ctx.lineTo(0,14);ctx.lineTo(-5,9);ctx.lineTo(-8,-1);ctx.closePath();ctx.fill();ctx.stroke();
+ ctx.strokeStyle='#ffffffaa';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-4,-5);ctx.lineTo(-1,-10);ctx.stroke();
+ // Wing markings and tiny navigation lights
+ ctx.strokeStyle=ship.accent;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-11,5);ctx.lineTo(-22,13);ctx.moveTo(11,5);ctx.lineTo(22,13);ctx.stroke();
+ for(const [lx,col] of [[-16,C.cyan],[16,C.pink]]){ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(lx,14,2.5,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;
+ ctx.restore();
+}
+function draw(){const theme=themes.find(v=>v.id===activeTheme)||themes[0];ctx.fillStyle=theme.bg;ctx.fillRect(0,0,W,H);
+// Deep-space atmosphere: layered animated nebulae, soft vignette and subtle scanlines.
+const nebulae=[{x:140+Math.sin(elapsed*.16)*65,y:175+Math.cos(elapsed*.13)*28,r:300,c:theme.nebula,a:.13},{x:790+Math.cos(elapsed*.12)*80,y:410+Math.sin(elapsed*.17)*35,r:330,c:theme.stars,a:.085},{x:570+Math.sin(elapsed*.1)*45,y:80,r:235,c:'#ff4baa',a:.045}];
+for(const n of nebulae){ctx.save();ctx.globalAlpha=n.a;const ng=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);ng.addColorStop(0,n.c);ng.addColorStop(1,'transparent');ctx.fillStyle=ng;ctx.fillRect(n.x-n.r,n.y-n.r,n.r*2,n.r*2);ctx.restore()}
+glow(180,170,230,theme.nebula+'40');glow(800,430,260,theme.nebula+'30');glow(650,90,170,theme.nebula+'20');for(let s of stars){s.y+=s.s/60;if(s.y>H){s.y=-3;s.x=Math.random()*W}let tw=.6+.4*Math.sin(elapsed*3+s.p);ctx.fillStyle=theme.stars;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()}for(let y=100;y<H;y+=70){ctx.strokeStyle=theme.grid;ctx.globalAlpha=.48;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.globalAlpha=1;
+// Subtle diagonal speed streaks and a luminous horizon grid.
+ctx.save();ctx.globalAlpha=.16;ctx.strokeStyle=theme.stars;ctx.lineWidth=1;for(let i=0;i<18;i++){const yy=(i*47+elapsed*75)%(H+60)-30;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(95,yy-24);ctx.stroke()}ctx.restore();
+const horizon=ctx.createLinearGradient(0,H-95,0,H);horizon.addColorStop(0,'transparent');horizon.addColorStop(1,theme.nebula+'30');ctx.fillStyle=horizon;ctx.fillRect(0,H-95,W,95);
+
+for(let o of g.obs){let pg=ctx.createLinearGradient(o.x,0,o.x+o.w,0);pg.addColorStop(0,'#10172f');pg.addColorStop(.22,o.color);pg.addColorStop(.5,'#26345c');pg.addColorStop(.82,o.color);pg.addColorStop(1,'#0b122a');ctx.fillStyle=pg;ctx.fillRect(o.x,0,o.w,o.top);ctx.fillRect(o.x,o.bottom,o.w,H-o.bottom);ctx.fillStyle=o.color;ctx.shadowColor=o.color;ctx.shadowBlur=13;ctx.fillRect(o.x-1,o.top-5,o.w+2,5);ctx.fillRect(o.x-1,o.bottom,o.w+2,5);ctx.shadowBlur=0;ctx.save();ctx.globalAlpha=.28;ctx.fillStyle=o.color;ctx.fillRect(o.x+o.w*.18,0,2,Math.max(0,o.top-8));ctx.fillRect(o.x+o.w*.18,o.bottom+8,2,Math.max(0,H-o.bottom-8));ctx.restore();ctx.fillStyle='#ffffff77';ctx.fillRect(o.x+5,0,2,Math.max(0,o.top-8));ctx.fillRect(o.x+5,o.bottom+8,2,Math.max(0,H-o.bottom-8));ctx.fillStyle='#ffffff22';ctx.fillRect(o.x+o.w-5,0,2,Math.max(0,o.top-8));ctx.fillRect(o.x+o.w-5,o.bottom+8,2,Math.max(0,H-o.bottom-8));for(let yy=26;yy<o.top-10;yy+=42){ctx.fillStyle=o.color;ctx.fillRect(o.x+o.w/2-2,yy,4,7)}for(let yy=o.bottom+16;yy<H-10;yy+=42){ctx.fillStyle=o.color;ctx.fillRect(o.x+o.w/2-2,yy,4,7)}}
+for(let c of g.coins){let r=11+Math.sin(c.phase)*2;glow(c.x,c.y,32,'rgba(255,215,70,.42)');ctx.save();ctx.translate(c.x,c.y);let cg=ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r*1.3);cg.addColorStop(0,'#fffbd2');cg.addColorStop(.28,'#ffe76b');cg.addColorStop(.7,'#ffb91f');cg.addColorStop(1,'#9b570d');ctx.fillStyle=cg;ctx.beginPath();ctx.arc(0,0,r+3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff0a1';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='#b56b0a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r-2,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff9d6';ctx.font='bold 13px Consolas';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('G',0,1);ctx.restore()}
+for(let sp of g.specials){sp.phase+=.04;glow(sp.x,sp.y,42,'rgba(255,75,170,.45)');ctx.save();ctx.translate(sp.x,sp.y);ctx.rotate(Math.sin(sp.phase)*.12);ctx.fillStyle='#ff4baa';ctx.fillRect(-9,-23,18,46);ctx.fillStyle='#ffe15e';ctx.fillRect(-4,-17,8,34);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(-11,-25,22,50);ctx.restore();ctx.fillStyle='#ffe15e';ctx.font='bold 13px Consolas';ctx.textAlign='center';ctx.fillText('+30',sp.x,sp.y-34);ctx.textAlign='left'}
+for(let p of g.parts){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(1,p.r*p.life/p.max),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}if(!g.dead)drawShip(135,g.y,Math.max(-24,Math.min(24,-g.vy*.045)));
+// Premium glass HUD with a top-edge highlight.
+ctx.fillStyle='rgba(4,7,25,.91)';ctx.fillRect(0,0,W,72);const hudshine=ctx.createLinearGradient(0,0,0,72);hudshine.addColorStop(0,'rgba(70,245,255,.13)');hudshine.addColorStop(1,'rgba(70,245,255,0)');ctx.fillStyle=hudshine;ctx.fillRect(0,0,W,72);ctx.save();ctx.shadowColor=C.cyan;ctx.shadowBlur=12;ctx.strokeStyle='#236087';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,71);ctx.lineTo(W,71);ctx.stroke();ctx.restore();ctx.strokeStyle='#236087';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,71);ctx.lineTo(W,71);ctx.stroke();ctx.fillStyle=C.cyan;ctx.font='bold 23px Consolas';ctx.fillText('GRAVITY FLIP',24,29);ctx.fillStyle='#91b6db';ctx.font='bold 14px Consolas';ctx.fillText('TAP TO BEND THE RULES',26,51);ctx.fillStyle=C.white;ctx.font='bold 21px Consolas';ctx.fillText('SCORE  '+String(g.score).padStart(6,'0'),755,30);ctx.fillStyle=C.yellow;ctx.font='bold 15px Consolas';ctx.fillText('COINS  '+g.coinCount,770,53);
+if(g.dead||paused){ctx.fillStyle='rgba(2,4,18,.78)';ctx.fillRect(0,0,W,H);const veil=ctx.createRadialGradient(W/2,H/2,20,W/2,H/2,470);veil.addColorStop(0,'rgba(20,30,70,.15)');veil.addColorStop(1,'rgba(0,0,0,.7)');ctx.fillStyle=veil;ctx.fillRect(0,0,W,H);ctx.textAlign='center';if(g.dead){ctx.fillStyle=C.pink;ctx.font='bold 58px Consolas';ctx.fillText('CRASHED!',W/2,H/2-72);ctx.fillStyle=C.yellow;ctx.font='bold 24px Consolas';ctx.fillText('SCORE  '+String(g.score).padStart(6,'0'),W/2,H/2-16);ctx.fillStyle=C.white;ctx.font='bold 18px Consolas';ctx.fillText('COINS COLLECTED  '+g.coinCount,W/2,H/2+20);ctx.fillStyle=C.cyan;ctx.fillText('Press SPACE or click to try again',W/2,H/2+76)}else{ctx.fillStyle=C.cyan;ctx.font='bold 54px Consolas';ctx.fillText('PAUSED',W/2,H/2);ctx.fillStyle=C.white;ctx.font='bold 20px Consolas';ctx.fillText('Press P to resume',W/2,H/2+42)}ctx.textAlign='left'}}
+function update(dt){if(!paused&&!g.dead){g.dist+=g.speed*dt;g.score=Math.floor(g.dist/12)+g.coinCount*50;g.speed=Math.min(590,300+g.dist/180);g.spawn-=dt;g.coinSpawn-=dt;g.vy+=1450*g.grav*dt;g.vy=Math.max(-600,Math.min(600,g.vy));g.y+=g.vy*dt;if(g.spawn<=0){let gap=Math.max(158,205-g.dist/140),center=rand(145,H-145),w=rand(48,72);g.pillarCount++;const gate={x:W+30,w,top:center-gap/2,bottom:center+gap/2,center,gap,passed:false,color:[C.pink,C.purple,'#32beff'][Math.floor(Math.random()*3)]};g.obs.push(gate);
+// Collectibles are placed ONLY in the safe opening between this gate's pillars.
+// Add a small coin trail on most gates so it feels rewarding but remains fair.
+if(g.pillarCount%3===0){for(let i=0;i<3;i++)g.coins.push({x:W+38+i*31,y:center+rand(-gap*.18,gap*.18),phase:Math.random()*6.28})}
+// Every 10th gate has one special +30-point pillar in the safe opening.
+if(g.pillarCount%10===0)g.specials.push({x:W+45,y:center,phase:Math.random()*6.28});
+// Every 20th gate has a trail of 6 coins through the safe opening.
+if(g.pillarCount%20===0){for(let i=0;i<6;i++)g.coins.push({x:W+35+i*28,y:center+Math.sin(i/5*Math.PI)*gap*.13,phase:Math.random()*6.28})}
+g.spawn=Math.max(.78,1.35-g.dist/4500)+rand(-.12,.18)}const px=135,py=g.y;for(let o of g.obs){o.x-=g.speed*dt;if(!o.passed&&o.x+o.w<px){o.passed=true;g.score+=25}if(px+19>o.x&&px-19<o.x+o.w&&(py-20<o.top||py+20>o.bottom)){g.dead=true;lastScore=g.score;burst(px,py,C.pink,45);if(!runSubmitted){runSubmitted=true;coinBank+=g.coinCount;saveCosmetics();renderShop();handleRunEnd(lastScore)}break}}g.obs=g.obs.filter(o=>o.x>-100);for(let c of g.coins){c.x-=g.speed*dt;c.phase+=dt*5;if(Math.hypot(c.x-px,c.y-py)<38){c.taken=true;g.coinCount++;g.score+=50;burst(c.x,c.y,C.yellow,12)}}g.coins=g.coins.filter(c=>c.x>-40&&!c.taken);for(let sp of g.specials){sp.x-=g.speed*dt;if(Math.hypot(sp.x-px,sp.y-py)<38){sp.taken=true;g.score+=30;burst(sp.x,sp.y,C.pink,22);setStatus('Special pillar collected! +30 points!')}}g.specials=g.specials.filter(sp=>sp.x>-50&&!sp.taken);if(g.y<30){g.y=30;g.vy=0}if(g.y>H-30){g.y=H-30;g.vy=0}}for(let p of g.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-2*dt);p.vy*=Math.max(0,1-2*dt);p.life-=dt}g.parts=g.parts.filter(p=>p.life>0)}
+function frame(now){let dt=Math.min((now-last)/1000,1/30);last=now;elapsed+=dt;update(dt);draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+
+
+// Cosmetic shop: collected coins are banked when a run ends. Purchases never change gameplay stats.
+function renderShop(){saveCosmetics();const host=$('shopItems');host.replaceChildren();const list=shopMode==='ships'?ships:themes;for(const item of list){const owned=(shopMode==='ships'?ownedShips:ownedThemes).has(item.id),active=(shopMode==='ships'?activeShip:activeTheme)===item.id;const b=document.createElement('button');b.type='button';b.style.minHeight='76px';b.style.padding='8px';b.style.borderColor=active?'#ffe15e':'#31557c';b.style.background=shopMode==='ships'?item.body:item.bg;b.innerHTML=`<div style="font-size:20px">${shopMode==='ships'?'🚀':'🌌'}</div><div style="font-size:12px">${item.name}</div><div style="font-size:11px;color:#ffe15e">${active?'EQUIPPED':owned?'OWNED':item.cost+' coins'}</div>`;b.addEventListener('click',()=>{const set=shopMode==='ships'?ownedShips:ownedThemes;const key=shopMode==='ships'?SHIP_KEY:THEME_KEY;if(set.has(item.id)){if(shopMode==='ships')activeShip=item.id;else activeTheme=item.id;localStorage.setItem(key,item.id);renderShop();return}if(coinBank<item.cost){$('status').textContent='You need '+(item.cost-coinBank)+' more coins for '+item.name+'.';return}coinBank-=item.cost;set.add(item.id);if(shopMode==='ships')activeShip=item.id;else activeTheme=item.id;localStorage.setItem(key,item.id);saveCosmetics();renderShop();$('status').textContent='Unlocked '+item.name+'! Cosmetic only — no buffs.'});host.appendChild(b)}}
+$('shopShips').addEventListener('click',()=>{shopMode='ships';renderShop()});$('shopThemes').addEventListener('click',()=>{shopMode='themes';renderShop()});saveCosmetics();renderShop();
+
+// Optional relaxing, Kahoot-style ambient loop made with Web Audio (no external files).
+let musicCtx=null,musicTimer=null,musicOn=false,musicStep=0;
+const musicNotes=[261.63,329.63,392.00,329.63,293.66,349.23,440.00,349.23,261.63,329.63,392.00,493.88,349.23,392.00,440.00,392.00];
+function playMusicNote(){if(!musicOn||!musicCtx)return;const now=musicCtx.currentTime;const freq=musicNotes[musicStep%musicNotes.length];musicStep++;const osc=musicCtx.createOscillator(),gain=musicCtx.createGain();osc.type='sine';osc.frequency.setValueAtTime(freq,now);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.035,now+.18);gain.gain.exponentialRampToValueAtTime(.0001,now+1.05);osc.connect(gain);gain.connect(musicCtx.destination);osc.start(now);osc.stop(now+1.1);if(musicStep%4===0){const pad=musicCtx.createOscillator(),pg=musicCtx.createGain();pad.type='triangle';pad.frequency.value=freq/2;pg.gain.setValueAtTime(.0001,now);pg.gain.exponentialRampToValueAtTime(.012,now+.3);pg.gain.exponentialRampToValueAtTime(.0001,now+1.8);pad.connect(pg);pg.connect(musicCtx.destination);pad.start(now);pad.stop(now+1.85)}}
+async function toggleMusic(){try{if(!musicCtx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC){$('musicToggle').textContent='♫ Music unavailable';return}musicCtx=new AC()}if(musicCtx.state==='suspended')await musicCtx.resume();musicOn=!musicOn;$('musicToggle').textContent=musicOn?'♫ Music: On':'♫ Music: Off';$('musicToggle').setAttribute('aria-pressed',String(musicOn));if(musicOn){playMusicNote();musicTimer=setInterval(playMusicNote,650)}else{clearInterval(musicTimer);musicTimer=null}}catch(e){$('musicToggle').textContent='♫ Music: Off'}}
+$('musicToggle').addEventListener('click',toggleMusic);
+async function toggleFullscreen(){const on=!document.body.classList.contains('game-fullscreen');document.body.classList.toggle('game-fullscreen',on);$('fullscreenToggle').textContent=on?'⛶ Exit fullscreen':'⛶ Fullscreen';if(on&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen()}catch(e){/* CSS fullscreen still works if browser blocks native fullscreen */}}else if(!on&&document.fullscreenElement&&document.exitFullscreen){try{await document.exitFullscreen()}catch(e){}}}
+$('fullscreenToggle').addEventListener('click',toggleFullscreen);$('exitFullscreen').addEventListener('click',toggleFullscreen);$('touchFlip').addEventListener('click',flip);
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('game-fullscreen')){document.body.classList.remove('game-fullscreen');$('fullscreenToggle').textContent='⛶ Fullscreen'}});
+
+// Global leaderboard via Supabase REST.
+function configured(){return SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('PASTE_')&&!SUPABASE_ANON_KEY.includes('PASTE_')}
+function setStatus(s){$('status').textContent=s}
+async function api(path,opts={}){const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...opts,headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=minimal',...(opts.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,220));return r}
+const NAME_KEY='gravityFlipUsernameV1';
+const PLAYER_KEY='gravityFlipPlayerIdV1';
+const BEST_KEY='gravityFlipBestScoreV1';
+const SENT_KEY='gravityFlipSubmittedScoresV1';
+function savedName(){try{return localStorage.getItem(NAME_KEY)||''}catch{return ''}}
+function scoreMultiplier(){return 1}
+function playerId(){try{let id=localStorage.getItem(PLAYER_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(PLAYER_KEY,id)}return id}catch{return crypto.randomUUID()}}
+function initName(){const name=savedName();if(name)$('username').value=name}
+$('saveName').addEventListener('click',async()=>{const oldName=savedName(),username=$('username').value.trim();if(!/^[A-Za-z0-9 _-]{2,16}$/.test(username)){setStatus('Username must be 2–16 letters, numbers, spaces, _ or -.');return}if(!configured()){setStatus('Leaderboard database is not configured.');return}try{const claim=await fetch(SUPABASE_URL+'/rest/v1/rpc/claim_username',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_username:username,p_player_id:playerId()})});if(!claim.ok)throw new Error((await claim.text()).slice(0,180));const allowed=await claim.json();if(allowed!==true)throw new Error('That name is already reserved by another player. Choose a different name.');if(oldName && oldName.toLowerCase()!==username.toLowerCase()){const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/rename_player_scores',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_player_id:playerId(),p_old_username:oldName,p_new_username:username})});if(!r.ok)throw new Error((await r.text()).slice(0,180))}localStorage.setItem(NAME_KEY,username);$('username').value=username;setStatus('Username saved: '+username+'. This name is now reserved.');await refreshBoard()}catch(e){setStatus('Could not save username: '+e.message)}});
+async function refreshBoard(){if(!configured()){setStatus('Leaderboard database is not configured.');return []}try{const r=await fetch(SUPABASE_URL+'/rest/v1/scores?select=username,score,created_at&order=score.desc,created_at.asc&limit=100',{headers:{apikey:SUPABASE_ANON_KEY}});if(!r.ok)throw new Error(await r.text());const rows=await r.json();const list=$('leaderboard');list.replaceChildren();if(!rows.length){list.innerHTML='<li><span>—</span><span>No scores yet — be the first!</span><span>—</span></li>'}rows.forEach((row,i)=>{const li=document.createElement('li');for(const val of [i+1,row.username,row.score]){const span=document.createElement('span');span.textContent=val;span.className=typeof val==='string'&&val===row.username?'name':(typeof val==='number'&&val===row.score?'score':'rank');li.appendChild(span)}list.appendChild(li)});return rows}catch(e){setStatus('Could not load leaderboard: '+e.message);return null}}
+async function handleRunEnd(rawScore){
+  const username=savedName();
+  if(!username){setStatus('Run finished! Score: '+rawScore+'. Choose and save a username to submit it to the leaderboard.');return}
+  const score=rawScore;
+  if(!configured()){setStatus('Run finished! Score: '+score+'. Leaderboard is not connected.');return}
+  let best=0, sent=[];try{best=Number(localStorage.getItem(BEST_KEY)||0);sent=JSON.parse(localStorage.getItem(SENT_KEY)||'[]');if(!Array.isArray(sent))sent=[]}catch{}
+  const rows=await refreshBoard();if(rows===null){setStatus('Run finished! Score: '+score+'. Could not load leaderboard; try Refresh leaderboard.');return}
+  const cutoff=rows.length>=100?Number(rows[rows.length-1].score):0;
+  const existingEntry=rows.find(row=>String(row.username).toLowerCase()===username.toLowerCase());
+  const storedBest=existingEntry?Number(existingEntry.score):0;
+  const newPersonalBest=score>Math.max(best,storedBest);
+  const qualifies=rows.length<100||score>cutoff;
+  const alreadySent=sent.includes(score);
+  if(score<=storedBest){setStatus('Run finished! This run: '+score+'. Your leaderboard best stays '+storedBest+'. Keep going to beat it!');return}
+  if(!newPersonalBest&&!(qualifies&&!alreadySent)){setStatus('Run finished! This run: '+score+'. Your leaderboard best stays '+storedBest+'. Beat your personal best or reach the Top 100!');return}
+  try{
+    const pid=playerId();
+    await api('scores?on_conflict=username',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({username,score,player_id:pid})});
+    if(newPersonalBest){try{localStorage.setItem(BEST_KEY,String(score))}catch{}}
+    if(!alreadySent){sent.push(score);sent=sent.slice(-200);try{localStorage.setItem(SENT_KEY,JSON.stringify(sent))}catch{}}
+    setStatus('Run finished! '+(newPersonalBest?'New personal best! ':'')+'Final score: '+score+'. Saving your best score…');
+    const updated=await refreshBoard();
+    if(updated&&updated.some(row=>String(row.username).toLowerCase()===username.toLowerCase()&&Number(row.score)===score))setStatus('Run finished! Final score: '+score+'. '+(newPersonalBest?'New personal best! ':'')+'Leaderboard updated!');
+  }catch(e){setStatus('Run finished! Final score: '+score+'. Score submission failed: '+e.message)}
+}
+// One-time browser-local cheat code: ORAPACORA grants 400 coins.
+const CHEAT_USED_KEY='gravityFlipOrapacoraRedeemedV1';
+$('redeemCheat').addEventListener('click',()=>{const input=$('cheatInput'),status=$('cheatStatus');const code=input.value.trim().toLowerCase();if(code!=='orapacora'){status.textContent='That code is not valid.';return}if(localStorage.getItem(CHEAT_USED_KEY)==='yes'){status.textContent='This code has already been used on this browser.';return}coinBank+=400;localStorage.setItem(CHEAT_USED_KEY,'yes');saveCosmetics();input.value='';status.textContent='Code accepted! +400 coins added to your bank!';});
+initName();
+$('refresh').addEventListener('click',refreshBoard);
+$('deleteRecord').addEventListener('click',async()=>{const username=savedName();if(!username){setStatus('Save your username first.');return}if(!confirm('Delete your leaderboard record for '+username+'? This cannot be undone.'))return;try{const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/delete_player_scores',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_player_id:playerId()})});if(!r.ok)throw new Error((await r.text()).slice(0,180));localStorage.removeItem(BEST_KEY);localStorage.removeItem(SENT_KEY);setStatus('Your leaderboard record was deleted. Your coins and cosmetic purchases are unchanged.');await refreshBoard()}catch(e){setStatus('Could not delete record: '+e.message+'. This only deletes records linked to this browser player ID.')}});
+
+refreshBoard();
+
+// Creator panel: read-only tools. The UI gate is not a security boundary because browser code is public.
+const CREATOR_CODE='NOVA-OWNER-7429';let creatorUnlocked=false,adminCache=[];
+$('creatorOpen').addEventListener('click',async()=>{if(!creatorUnlocked){const entered=prompt('Creator code:');if(entered!==CREATOR_CODE){if(entered!==null)alert('Wrong creator code.');return}creatorUnlocked=true;$('creatorPanel').hidden=false;$('creatorOpen').textContent='👑 Creator Panel Unlocked'}else{$('creatorPanel').hidden=!$('creatorPanel').hidden}if(!$('creatorPanel').hidden)await loadAdminData()});
+async function loadAdminData(){const stats=$('creatorStats');stats.textContent='Loading leaderboard data…';try{const r=await fetch(SUPABASE_URL+'/rest/v1/scores?select=username,score,created_at,player_id&order=score.desc,created_at.asc&limit=1000',{headers:{apikey:SUPABASE_ANON_KEY}});if(!r.ok)throw new Error((await r.text()).slice(0,180));adminCache=await r.json();const unique=new Set(adminCache.map(x=>String(x.username).toLowerCase()));stats.textContent=`Rows loaded: ${adminCache.length} · Unique names: ${unique.size} · Highest score: ${adminCache.length?Math.max(...adminCache.map(x=>Number(x.score)||0)).toLocaleString():'0'} · Data returned by public leaderboard API`;renderAdminRows()}catch(e){stats.textContent='Could not load admin data: '+e.message}}
+function renderAdminRows(){const q=$('adminSearch').value.trim().toLowerCase(),list=$('adminRows');list.replaceChildren();const rows=adminCache.filter(r=>String(r.username).toLowerCase().includes(q));for(const r of rows){const li=document.createElement('li');li.textContent=`${r.username} — ${Number(r.score).toLocaleString()} points · ${r.created_at?new Date(r.created_at).toLocaleString():'date unavailable'}`;list.appendChild(li)}if(!rows.length){const li=document.createElement('li');li.textContent='No matching records.';list.appendChild(li)}}
+$('adminSearch').addEventListener('input',renderAdminRows);$('adminRefresh').addEventListener('click',loadAdminData);$('adminExport').addEventListener('click',()=>{const q=$('adminSearch').value.trim().toLowerCase(),rows=adminCache.filter(r=>String(r.username).toLowerCase().includes(q));const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='username,score,created_at,player_id\n'+rows.map(r=>[r.username,r.score,r.created_at,r.player_id].map(quote).join(',')).join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='gravity-flip-leaderboard.csv';a.click();URL.revokeObjectURL(url)});
+
+</script>
+</body>
+</html>
