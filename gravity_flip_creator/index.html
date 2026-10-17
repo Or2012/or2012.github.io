@@ -104,14 +104,14 @@ function flip(){if(g.dead){lastScore=g.score;reset();return}if(paused)return;g.g
 function keydown(e){if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(['Space','ArrowUp','KeyW'].includes(e.code))flip();if(e.code==='KeyP'&&!g.dead)paused=!paused;if(e.code==='Escape')paused=true;if(e.code==='KeyR'&&g.dead){lastScore=g.score;reset()}}
 window.addEventListener('keydown',keydown);canvas.addEventListener('pointerdown',flip);
 function drawShip(x,y,tilt=0){
- const ship=ships.find(v=>v.id===activeShip)||ships[0],lift=Math.max(0,Math.min(1,-g.vy/380)),pulse=.86+.14*Math.sin(elapsed*18);
- ctx.save();ctx.translate(x,y);ctx.rotate(tilt*Math.PI/180);
+ const ship=ships.find(v=>v.id===activeShip)||ships[0],lift=Math.max(0,Math.min(1,-g.vy/380)),pulse=.86+.14*Math.sin(elapsed*18),beginner=g.mode==='beginner';
+ ctx.save();ctx.translate(x,y);ctx.rotate(tilt*Math.PI/180);if(beginner)ctx.scale(.6,.6);
  // Rocket exhaust responds to vertical movement: bright and long while rising, cool and faint while falling.
  const exhaustLen=5+lift*25*pulse;ctx.globalAlpha=.2+lift*.8;glow(0,27,18+lift*23,lift>.35?'rgba(255,129,58,.7)':'rgba(73,195,255,.28)');
  const flame=ctx.createLinearGradient(0,22,0,22+exhaustLen);flame.addColorStop(0,lift>.3?'#fff4b0':'#73dfff');flame.addColorStop(.28,lift>.3?'#ffb13b':'#319cff');flame.addColorStop(.7,lift>.3?'#ff4d75':'#4965dc');flame.addColorStop(1,'rgba(86,96,255,0)');ctx.fillStyle=flame;ctx.beginPath();ctx.moveTo(-6,22);ctx.quadraticCurveTo(-8,29+exhaustLen*.25,0,22+exhaustLen);ctx.quadraticCurveTo(8,29+exhaustLen*.25,6,22);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
- // Swept retro fins, shaped to frame the rounded body.
- const fins=ctx.createLinearGradient(-31,0,31,22);fins.addColorStop(0,'#19234a');fins.addColorStop(.45,ship.body);fins.addColorStop(1,ship.accent);ctx.fillStyle=fins;ctx.strokeStyle='#d8faff';ctx.lineWidth=1.5;
- for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*10,1);ctx.quadraticCurveTo(side*24,3,side*31,15);ctx.lineTo(side*24,27);ctx.quadraticCurveTo(side*18,19,side*9,18);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle=ship.glow;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(side*15,8);ctx.lineTo(side*26,17);ctx.stroke();ctx.strokeStyle='#d8faff';ctx.lineWidth=1.5}
+ // Classic keeps the swept side fins; Beginner uses a compact central rocket.
+ if(!beginner){const fins=ctx.createLinearGradient(-31,0,31,22);fins.addColorStop(0,'#19234a');fins.addColorStop(.45,ship.body);fins.addColorStop(1,ship.accent);ctx.fillStyle=fins;ctx.strokeStyle='#d8faff';ctx.lineWidth=1.5;
+ for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*10,1);ctx.quadraticCurveTo(side*24,3,side*31,15);ctx.lineTo(side*24,27);ctx.quadraticCurveTo(side*18,19,side*9,18);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle=ship.glow;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(side*15,8);ctx.lineTo(side*26,17);ctx.stroke();ctx.strokeStyle='#d8faff';ctx.lineWidth=1.5}}
  // Single bell and inner reactor, visible beneath the hull.
  ctx.fillStyle='#101a36';ctx.strokeStyle=ship.glow;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-8,15);ctx.lineTo(8,15);ctx.lineTo(6,25);ctx.lineTo(0,29);ctx.lineTo(-6,25);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle=lift>.35?'#fff0a0':'#71dbff';ctx.shadowColor=lift>.35?'#ff9a37':'#54baff';ctx.shadowBlur=4+lift*13;ctx.beginPath();ctx.ellipse(0,21,4,2.6,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
  // Smooth capsule hull with a tapered nose and rounded shoulders.
@@ -121,7 +121,7 @@ function drawShip(x,y,tilt=0){
  // Large glossy circular cockpit with a metallic bezel.
  ctx.fillStyle='#18244a';ctx.strokeStyle='#b8d5ed';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-2,10.5,0,Math.PI*2);ctx.fill();ctx.stroke();const glass=ctx.createRadialGradient(-3,-6,1,1,-1,10);glass.addColorStop(0,'#efffff');glass.addColorStop(.22,ship.glow);glass.addColorStop(.68,'#258ec8');glass.addColorStop(1,'#10234d');ctx.fillStyle=glass;ctx.beginPath();ctx.arc(0,-2,7.8,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d9ffff';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#ffffffcc';ctx.beginPath();ctx.ellipse(-3,-6,2.4,1.3,-.55,0,Math.PI*2);ctx.fill();
  // Small service panel and side rivets.
- ctx.fillStyle=ship.accent;ctx.globalAlpha=.8;ctx.fillRect(-4,11,8,2);ctx.globalAlpha=1;for(const sx of [-14,14]){ctx.fillStyle=ship.glow;ctx.shadowColor=ship.glow;ctx.shadowBlur=6;ctx.beginPath();ctx.arc(sx,10,1.8,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;
+ ctx.fillStyle=ship.accent;ctx.globalAlpha=.8;ctx.fillRect(-4,11,8,2);ctx.globalAlpha=1;if(!beginner)for(const sx of [-14,14]){ctx.fillStyle=ship.glow;ctx.shadowColor=ship.glow;ctx.shadowBlur=6;ctx.beginPath();ctx.arc(sx,10,1.8,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;
  ctx.restore();
 }function draw(){const theme=themes.find(v=>v.id===activeTheme)||themes[0];ctx.fillStyle=theme.bg;ctx.fillRect(0,0,W,H);
 // Deep-space atmosphere: layered animated nebulae, soft vignette and subtle scanlines.
