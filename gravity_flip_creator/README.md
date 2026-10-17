@@ -70,3 +70,9 @@ The game has no login or email. A name is reserved in Supabase when the player c
 
 ## Creator panel
 Open **Creator / Admin Panel** in the sidebar and enter the creator code: `ora12`. This is a read-only panel for viewing/exporting scores. Important: because this game is a static browser site, this code is visible in the downloaded page source and is not secure against determined users. Do not use it for private/destructive admin actions; server-side authentication is needed for that.
+
+## Game modes and Beginner leaderboard
+
+- Classic and Beginner have separate global leaderboards. Beginner uses a smaller collision hitbox; the optional Slow button runs gameplay and score progression at 0.5x speed.
+- For an existing Supabase project, apply `beginner_mode_migration.sql` once in the Supabase SQL Editor to create the empty Beginner board and keep username changes and record deletion working across both boards. The existing Classic leaderboard data is preserved.
+- The later `delete_selected_mode_migration.sql` replaces the earlier all-board delete function. Apply it after `beginner_mode_migration.sql` when setting up an existing database.

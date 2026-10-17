@@ -30,7 +30,7 @@ input{width:100%}button{cursor:pointer;background:#103d58;border-color:#46f5ff;f
 .theme-star.one{left:18%;top:18%}.theme-star.two{right:22%;top:13%;font-size:11px}.theme-star.three{right:37%;top:42%;font-size:9px}
 .theme-horizon{position:absolute;left:0;right:0;bottom:0;height:25px;background:linear-gradient(0deg,var(--theme-nebula),transparent);border-top:1px solid var(--theme-stars)}#leaderboard li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid #1b3154;font-size:13px;background:linear-gradient(90deg,#101b3b44,transparent)}#leaderboard li:nth-child(1){background:linear-gradient(90deg,#ffe15e22,transparent);border-radius:6px}#leaderboard li:nth-child(2){background:linear-gradient(90deg,#c0d8ff12,transparent)}#leaderboard li:nth-child(3){background:linear-gradient(90deg,#ff9a5e12,transparent)}
 #leaderboard .rank{color:#79bfff;font-weight:bold;text-align:center}#leaderboard li:first-child .rank{color:#ffe15e}#leaderboard .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold}#leaderboard .score{color:#ffe15e;font-weight:bold;text-shadow:0 0 10px #ffe15e22}
-#gamehelp{font-size:12px;color:#a7bfdc;line-height:1.6;margin-top:8px}
+#gamehelp{font-size:12px;color:#a7bfdc;line-height:1.6;margin-top:8px}#gameOptions{flex-wrap:wrap;align-items:center}#gameOptions button,#boardModes button{flex:1 1 130px}.option-selected{border-color:#ffe15e;background:#33301c;box-shadow:0 0 12px #ffe15e33}#modeHint{flex:1 1 100%;line-height:1.4}body.game-fullscreen #gameOptions{display:none!important}
 footer{color:#7995b8;font-size:12px;line-height:1.6}
 @media(max-width:900px){#layout{grid-template-columns:1fr}.panel{order:2}#leaderboard{max-height:250px}#shopItems{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 #mobileControls{display:none}
@@ -46,8 +46,9 @@ body.game-fullscreen{padding:0;gap:0;overflow:hidden}body.game-fullscreen header
 <section>
 <canvas id="game" width="1000" height="650" aria-label="Gravity Flip game"></canvas>
 <div id="gamehelp">SPACE / W / ↑ / CLICK = FLIP GRAVITY · P = PAUSE · ESC = pause</div>
+<div id="gameOptions" class="row" role="group" aria-label="Game mode and speed"><span class="tag">Mode:</span><button id="modeClassic" type="button" aria-pressed="false">Classic</button><button id="modeBeginner" type="button" aria-pressed="false">Beginner (small hitbox)</button><button id="slowToggle" type="button" aria-pressed="false">Slow: Off (0.5x)</button><span id="modeHint" class="tag"></span></div>
 </section>
-<div id="mobileControls"><button id="exitFullscreen" type="button">✕ Exit</button><button id="touchFlip" type="button">FLIP GRAVITY ↕</button></div>
+<div id="mobileControls"><button id="exitFullscreen" type="button">✕ Exit</button><button id="slowToggleMobile" type="button" aria-pressed="false">Slow: Off</button><button id="touchFlip" type="button">FLIP GRAVITY ↕</button></div>
 <aside class="panel">
 <h2>🪙 COIN SHOP</h2>
 <div class="tag">Bank: <strong id="coinBank">0</strong> coins · Cosmetics only — no buffs!</div>
@@ -58,8 +59,8 @@ body.game-fullscreen{padding:0;gap:0;overflow:hidden}body.game-fullscreen header
 <div class="row"><input id="cheatInput" maxlength="32" placeholder="Enter cheat code" aria-label="Cheat code" autocomplete="off" autocapitalize="none"></div>
 <div class="row"><button id="redeemCheat" type="button" style="width:100%;border-color:#ffe15e">Redeem code</button></div>
 <div id="cheatStatus" class="tag" role="status" style="min-height:18px"></div>
-<h2>🏆 GLOBAL TOP 100</h2>
-<div class="tag">One leaderboard entry per username. Names can be changed.</div>
+<h2 id="leaderboardHeading">🏆 GLOBAL TOP 100 - CLASSIC</h2>
+<div class="tag">One best score per username on each board.</div><div id="boardModes" class="row" role="group" aria-label="Leaderboard mode"><button id="boardClassic" type="button" aria-pressed="false">Classic board</button><button id="boardBeginner" type="button" aria-pressed="false">Beginner board</button></div><div id="boardHint" class="tag">Classic leaderboard.</div>
 <div class="row"><input id="username" maxlength="16" placeholder="Choose your username" autocomplete="nickname" aria-label="Your username"></div>
 <div class="row"><button id="saveName" style="width:100%">Save / change username</button></div>
 <div id="status" role="status">Leaderboard setup needed — follow README.md to connect your free database.</div>
@@ -91,10 +92,10 @@ let coinBank=Number(localStorage.getItem(COIN_BANK_KEY)||0);if(!Number.isFinite(
 let ownedShips=readSet(OWNED_SHIPS_KEY,['default']),ownedThemes=readSet(OWNED_THEMES_KEY,['space']);let activeShip=localStorage.getItem(SHIP_KEY)||'default',activeTheme=localStorage.getItem(THEME_KEY)||'space',shopMode='ships';
 function saveCosmetics(){localStorage.setItem(COIN_BANK_KEY,String(coinBank));localStorage.setItem(OWNED_SHIPS_KEY,JSON.stringify([...ownedShips]));localStorage.setItem(OWNED_THEMES_KEY,JSON.stringify([...ownedThemes]));localStorage.setItem(SHIP_KEY,activeShip);localStorage.setItem(THEME_KEY,activeTheme);$('coinBank').textContent=coinBank.toLocaleString();}
 
-const stars=[];let g,elapsed=0,last=performance.now(),paused=false,lastScore=0,runSubmitted=false;
+const GAME_MODE_KEY='gravityFlipGameModeV1';let gameMode=localStorage.getItem(GAME_MODE_KEY)==='beginner'?'beginner':'classic',boardMode=gameMode,slowMode=false;const stars=[];let g,elapsed=0,last=performance.now(),paused=false,lastScore=0,runSubmitted=false;
 const $=id=>document.getElementById(id);
 for(let i=0;i<130;i++)stars.push({x:Math.random()*W,y:Math.random()*H,s:20+Math.random()*90,r:Math.random()*2+.5,p:Math.random()*6.28});
-function reset(){g={y:H/2,vy:0,grav:1,obs:[],coins:[],specials:[],parts:[],dist:0,score:0,coinCount:0,speed:300,spawn:.6,pillarCount:0,dead:false,flash:0};paused=false;runSubmitted=false}
+function reset(){g={y:H/2,vy:0,grav:1,obs:[],coins:[],specials:[],parts:[],dist:0,score:0,coinCount:0,speed:300,spawn:.6,pillarCount:0,dead:false,flash:0,mode:gameMode};paused=false;runSubmitted=false}
 reset();
 function rand(a,b){return a+Math.random()*(b-a)}
 function glow(x,y,r,rgba){let gr=ctx.createRadialGradient(x,y,1,x,y,r);gr.addColorStop(0,rgba);gr.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
@@ -146,8 +147,8 @@ if(g.pillarCount%3===0){for(let i=0;i<3;i++)g.coins.push({x:W+38+i*31,y:center+r
 if(g.pillarCount%10===0)g.specials.push({x:W+45,y:center,phase:Math.random()*6.28});
 // Every 20th gate has a trail of 6 coins through the safe opening.
 if(g.pillarCount%20===0){for(let i=0;i<6;i++)g.coins.push({x:W+35+i*28,y:center+Math.sin(i/5*Math.PI)*gap*.13,phase:Math.random()*6.28})}
-g.spawn=Math.max(.78,1.35-g.dist/4500)+rand(-.12,.18)}const px=135,py=g.y;for(let o of g.obs){o.x-=g.speed*dt;if(!o.passed&&o.x+o.w<px){o.passed=true;g.score+=25}if(px+19>o.x&&px-19<o.x+o.w&&(py-20<o.top||py+20>o.bottom)){g.dead=true;lastScore=g.score;burst(px,py,C.pink,45);if(!runSubmitted){runSubmitted=true;coinBank+=g.coinCount;saveCosmetics();renderShop();handleRunEnd(lastScore)}break}}g.obs=g.obs.filter(o=>o.x>-100);for(let c of g.coins){c.x-=g.speed*dt;c.phase+=dt*5;if(Math.hypot(c.x-px,c.y-py)<38){c.taken=true;g.coinCount++;g.score+=50;burst(c.x,c.y,C.yellow,12)}}g.coins=g.coins.filter(c=>c.x>-40&&!c.taken);for(let sp of g.specials){sp.x-=g.speed*dt;if(Math.hypot(sp.x-px,sp.y-py)<38){sp.taken=true;g.score+=30;burst(sp.x,sp.y,C.pink,22);setStatus('Special pillar collected! +30 points!')}}g.specials=g.specials.filter(sp=>sp.x>-50&&!sp.taken);if(g.y<30){g.y=30;g.vy=0}if(g.y>H-30){g.y=H-30;g.vy=0}}for(let p of g.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-2*dt);p.vy*=Math.max(0,1-2*dt);p.life-=dt}g.parts=g.parts.filter(p=>p.life>0)}
-function frame(now){let dt=Math.min((now-last)/1000,1/30);last=now;elapsed+=dt;update(dt);draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+g.spawn=Math.max(.78,1.35-g.dist/4500)+rand(-.12,.18)}const px=135,py=g.y,hitX=g.mode==='beginner'?11:19,hitY=g.mode==='beginner'?12:20;for(let o of g.obs){o.x-=g.speed*dt;if(!o.passed&&o.x+o.w<px){o.passed=true;g.score+=25}if(px+hitX>o.x&&px-hitX<o.x+o.w&&(py-hitY<o.top||py+hitY>o.bottom)){g.dead=true;lastScore=g.score;burst(px,py,C.pink,45);if(!runSubmitted){runSubmitted=true;coinBank+=g.coinCount;saveCosmetics();renderShop();handleRunEnd(lastScore,g.mode)}break}}g.obs=g.obs.filter(o=>o.x>-100);for(let c of g.coins){c.x-=g.speed*dt;c.phase+=dt*5;if(Math.hypot(c.x-px,c.y-py)<38){c.taken=true;g.coinCount++;g.score+=50;burst(c.x,c.y,C.yellow,12)}}g.coins=g.coins.filter(c=>c.x>-40&&!c.taken);for(let sp of g.specials){sp.x-=g.speed*dt;if(Math.hypot(sp.x-px,sp.y-py)<38){sp.taken=true;g.score+=30;burst(sp.x,sp.y,C.pink,22);setStatus('Special pillar collected! +30 points!')}}g.specials=g.specials.filter(sp=>sp.x>-50&&!sp.taken);if(g.y<30){g.y=30;g.vy=0}if(g.y>H-30){g.y=H-30;g.vy=0}}for(let p of g.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-2*dt);p.vy*=Math.max(0,1-2*dt);p.life-=dt}g.parts=g.parts.filter(p=>p.life>0)}
+function frame(now){let dt=Math.min((now-last)/1000,1/30);last=now;elapsed+=dt;update(dt*(slowMode?.5:1));draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
 
 // Cosmetic shop: collected coins are banked when a run ends. Purchases never change gameplay stats.
@@ -173,43 +174,44 @@ const PLAYER_KEY='gravityFlipPlayerIdV1';
 const BEST_KEY='gravityFlipBestScoreV1';
 const SENT_KEY='gravityFlipSubmittedScoresV1';
 function savedName(){try{return localStorage.getItem(NAME_KEY)||''}catch{return ''}}
-function scoreMultiplier(){return 1}
+function syncGameModeControls(){const beginner=gameMode==='beginner';for(const [id,active] of [['modeClassic',!beginner],['modeBeginner',beginner]]){$(id).setAttribute('aria-pressed',String(active));$(id).classList.toggle('option-selected',active)}$('modeHint').textContent=beginner?'Beginner uses a smaller hitbox.':'Classic uses the standard hitbox.';$('deleteRecord').textContent='Delete my '+(beginner?'Beginner':'Classic')+' record'}
+function selectGameMode(mode){if(mode!=='classic'&&mode!=='beginner')return;gameMode=mode;g.mode=mode;try{localStorage.setItem(GAME_MODE_KEY,mode)}catch{};boardMode=mode;syncGameModeControls();syncBoardControls();setStatus(mode==='beginner'?'Beginner mode on: smaller hitbox.':'Classic mode on: standard hitbox.');refreshBoard(mode)}
+function selectBoardMode(mode){boardMode=mode;syncBoardControls();refreshBoard(mode)}
+function syncSlowControls(){const label=slowMode?'Slow: On (0.5x)':'Slow: Off (0.5x)';for(const id of ['slowToggle','slowToggleMobile']){const b=$(id);b.textContent=label;b.setAttribute('aria-pressed',String(slowMode));b.classList.toggle('option-selected',slowMode)}}
+function toggleSlowMode(){slowMode=!slowMode;syncSlowControls();setStatus(slowMode?'Slow mode on: game and score run at half speed.':'Slow mode off: game and score run at normal speed.')}
+const BEGINNER_BEST_KEY='gravityFlipBeginnerBestScoreV1';const BEGINNER_SENT_KEY='gravityFlipBeginnerSubmittedScoresV1';
 function playerId(){try{let id=localStorage.getItem(PLAYER_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(PLAYER_KEY,id)}return id}catch{return crypto.randomUUID()}}
 function initName(){const name=savedName();if(name)$('username').value=name}
 $('saveName').addEventListener('click',async()=>{const oldName=savedName(),username=$('username').value.trim();if(!/^[A-Za-z0-9 _-]{2,16}$/.test(username)){setStatus('Username must be 2–16 letters, numbers, spaces, _ or -.');return}if(!configured()){setStatus('Leaderboard database is not configured.');return}try{const claim=await fetch(SUPABASE_URL+'/rest/v1/rpc/claim_username',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_username:username,p_player_id:playerId()})});if(!claim.ok)throw new Error((await claim.text()).slice(0,180));const allowed=await claim.json();if(allowed!==true)throw new Error('That name is already reserved by another player. Choose a different name.');if(oldName && oldName.toLowerCase()!==username.toLowerCase()){const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/rename_player_scores',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_player_id:playerId(),p_old_username:oldName,p_new_username:username})});if(!r.ok)throw new Error((await r.text()).slice(0,180))}localStorage.setItem(NAME_KEY,username);$('username').value=username;setStatus('Username saved: '+username+'. This name is now reserved.');await refreshBoard()}catch(e){setStatus('Could not save username: '+e.message)}});
-async function refreshBoard(){if(!configured()){setStatus('Leaderboard database is not configured.');return []}try{const r=await fetch(SUPABASE_URL+'/rest/v1/scores?select=username,score,created_at&order=score.desc,created_at.asc&limit=100',{headers:{apikey:SUPABASE_ANON_KEY}});if(!r.ok)throw new Error(await r.text());const rows=await r.json();const list=$('leaderboard');list.replaceChildren();if(!rows.length){list.innerHTML='<li><span>—</span><span>No scores yet — be the first!</span><span>—</span></li>'}rows.forEach((row,i)=>{const li=document.createElement('li');for(const val of [i+1,row.username,row.score]){const span=document.createElement('span');span.textContent=val;span.className=typeof val==='string'&&val===row.username?'name':(typeof val==='number'&&val===row.score?'score':'rank');li.appendChild(span)}list.appendChild(li)});return rows}catch(e){setStatus('Could not load leaderboard: '+e.message);return null}}
-async function handleRunEnd(rawScore){
-  const username=savedName();
-  if(!username){setStatus('Run finished! Score: '+rawScore+'. Choose and save a username to submit it to the leaderboard.');return}
-  const score=rawScore;
+async function fetchBoard(mode){const table=mode==='beginner'?'beginner_scores':'scores',r=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?select=username,score,created_at&order=score.desc,created_at.asc&limit=100',{headers:{apikey:SUPABASE_ANON_KEY}});if(!r.ok)throw new Error(await r.text());return await r.json()}
+function syncBoardControls(){const beginner=boardMode==='beginner';$('leaderboardHeading').textContent='🏆 GLOBAL TOP 100 - '+(beginner?'BEGINNER':'CLASSIC');$('boardHint').textContent=beginner?'Beginner leaderboard - smaller hitbox. Slow mode is optional.':'Classic leaderboard - standard hitbox.';for(const [id,active] of [['boardClassic',!beginner],['boardBeginner',beginner]]){$(id).setAttribute('aria-pressed',String(active));$(id).classList.toggle('option-selected',active)}}
+async function refreshBoard(mode=boardMode){if(!configured()){setStatus('Leaderboard database is not configured.');return []}try{const rows=await fetchBoard(mode);if(mode===boardMode){const list=$('leaderboard');list.replaceChildren();if(!rows.length){list.innerHTML='<li><span class="rank">—</span><span class="name">No scores yet — be the first!</span><span class="score">—</span></li>'}rows.forEach((row,i)=>{const li=document.createElement('li');for(const val of [i+1,row.username,row.score]){const span=document.createElement('span');span.textContent=val;span.className=typeof val==='string'&&val===row.username?'name':(typeof val==='number'&&val===row.score?'score':'rank');li.appendChild(span)}list.appendChild(li)})}return rows}catch(e){setStatus('Could not load leaderboard: '+e.message);return null}}async function handleRunEnd(rawScore,mode){
+  const username=savedName(),score=rawScore,table=mode==='beginner'?'beginner_scores':'scores',keys=mode==='beginner'?{best:BEGINNER_BEST_KEY,sent:BEGINNER_SENT_KEY}:{best:BEST_KEY,sent:SENT_KEY};
+  if(!username){setStatus('Run finished! Score: '+score+'. Choose and save a username to submit it to the '+mode+' leaderboard.');return}
   if(!configured()){setStatus('Run finished! Score: '+score+'. Leaderboard is not connected.');return}
-  let best=0, sent=[];try{best=Number(localStorage.getItem(BEST_KEY)||0);sent=JSON.parse(localStorage.getItem(SENT_KEY)||'[]');if(!Array.isArray(sent))sent=[]}catch{}
-  const rows=await refreshBoard();if(rows===null){setStatus('Run finished! Score: '+score+'. Could not load leaderboard; try Refresh leaderboard.');return}
-  const cutoff=rows.length>=100?Number(rows[rows.length-1].score):0;
-  const existingEntry=rows.find(row=>String(row.username).toLowerCase()===username.toLowerCase());
-  const storedBest=existingEntry?Number(existingEntry.score):0;
-  const newPersonalBest=score>Math.max(best,storedBest);
-  const qualifies=rows.length<100||score>cutoff;
-  const alreadySent=sent.includes(score);
-  if(score<=storedBest){setStatus('Run finished! This run: '+score+'. Your leaderboard best stays '+storedBest+'. Keep going to beat it!');return}
-  if(!newPersonalBest&&!(qualifies&&!alreadySent)){setStatus('Run finished! This run: '+score+'. Your leaderboard best stays '+storedBest+'. Beat your personal best or reach the Top 100!');return}
+  let best=0,sent=[];try{best=Number(localStorage.getItem(keys.best)||0);sent=JSON.parse(localStorage.getItem(keys.sent)||'[]');if(!Array.isArray(sent))sent=[]}catch{}
+  let rows;try{rows=await fetchBoard(mode)}catch(e){setStatus('Run finished! Score: '+score+'. Could not load the '+mode+' leaderboard: '+e.message);return}
+  const cutoff=rows.length>=100?Number(rows[rows.length-1].score):0,existingEntry=rows.find(row=>String(row.username).toLowerCase()===username.toLowerCase()),storedBest=existingEntry?Number(existingEntry.score):0,newPersonalBest=score>Math.max(best,storedBest),qualifies=rows.length<100||score>cutoff,alreadySent=sent.includes(score);
+  if(score<=storedBest){setStatus('Run finished! This run: '+score+'. Your '+mode+' leaderboard best stays '+storedBest+'. Keep going to beat it!');return}
+  if(!newPersonalBest&&!(qualifies&&!alreadySent)){setStatus('Run finished! This run: '+score+'. Beat your '+mode+' personal best or reach its Top 100!');return}
   try{
     const pid=playerId();
-    await api('scores?on_conflict=username',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({username,score,player_id:pid})});
-    if(newPersonalBest){try{localStorage.setItem(BEST_KEY,String(score))}catch{}}
-    if(!alreadySent){sent.push(score);sent=sent.slice(-200);try{localStorage.setItem(SENT_KEY,JSON.stringify(sent))}catch{}}
-    setStatus('Run finished! '+(newPersonalBest?'New personal best! ':'')+'Final score: '+score+'. Saving your best score…');
-    const updated=await refreshBoard();
-    if(updated&&updated.some(row=>String(row.username).toLowerCase()===username.toLowerCase()&&Number(row.score)===score))setStatus('Run finished! Final score: '+score+'. '+(newPersonalBest?'New personal best! ':'')+'Leaderboard updated!');
+    await api(table+'?on_conflict=username',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({username,score,player_id:pid})});
+    if(newPersonalBest){try{localStorage.setItem(keys.best,String(score))}catch{}}
+    if(!alreadySent){sent.push(score);sent=sent.slice(-200);try{localStorage.setItem(keys.sent,JSON.stringify(sent))}catch{}}
+    setStatus('Run finished! '+(newPersonalBest?'New personal best! ':'')+'Final score: '+score+'. Saving to the '+mode+' leaderboard…');
+    const updated=boardMode===mode?await refreshBoard(mode):rows;
+    if(updated&&updated.some(row=>String(row.username).toLowerCase()===username.toLowerCase()&&Number(row.score)===score))setStatus('Run finished! Final score: '+score+'. '+(newPersonalBest?'New personal best! ':'')+mode.charAt(0).toUpperCase()+mode.slice(1)+' leaderboard updated!');
   }catch(e){setStatus('Run finished! Final score: '+score+'. Score submission failed: '+e.message)}
 }
 // One-time browser-local cheat codes. ORAPACORA grants 400 coins; UPDATE1 grants 200.
 const CHEAT_CODES={orapacora:{coins:400,key:'gravityFlipOrapacoraRedeemedV1'},update1:{coins:200,key:'gravityFlipUpdate1RedeemedV1'}};
 $('redeemCheat').addEventListener('click',async()=>{const input=$('cheatInput'),status=$('cheatStatus'),code=input.value.trim().toLowerCase();if(code===CREATOR_CODE){creatorUnlocked=true;$('creatorPanel').hidden=false;$('creatorOpen').textContent='👑 Creator Panel Unlocked';await loadAdminData();input.value='';status.textContent='Creator panel unlocked!';return}const reward=CHEAT_CODES[code];if(!reward){status.textContent='That code is not valid.';return}if(localStorage.getItem(reward.key)==='yes'){status.textContent='This code has already been used on this browser.';return}coinBank+=reward.coins;localStorage.setItem(reward.key,'yes');saveCosmetics();input.value='';status.textContent='Code accepted! +'+reward.coins+' coins added to your bank!';});initName();
+$('modeClassic').addEventListener('click',()=>selectGameMode('classic'));$('modeBeginner').addEventListener('click',()=>selectGameMode('beginner'));$('boardClassic').addEventListener('click',()=>selectBoardMode('classic'));$('boardBeginner').addEventListener('click',()=>selectBoardMode('beginner'));$('slowToggle').addEventListener('click',toggleSlowMode);$('slowToggleMobile').addEventListener('click',toggleSlowMode);
 $('refresh').addEventListener('click',refreshBoard);
-$('deleteRecord').addEventListener('click',async()=>{const username=savedName();if(!username){setStatus('Save your username first.');return}if(!confirm('Delete your leaderboard record for '+username+'? This cannot be undone.'))return;try{const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/delete_player_scores',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_player_id:playerId()})});if(!r.ok)throw new Error((await r.text()).slice(0,180));localStorage.removeItem(BEST_KEY);localStorage.removeItem(SENT_KEY);setStatus('Your leaderboard record was deleted. Your coins and cosmetic purchases are unchanged.');await refreshBoard()}catch(e){setStatus('Could not delete record: '+e.message+'. This only deletes records linked to this browser player ID.')}});
+$('deleteRecord').addEventListener('click',async()=>{const username=savedName(),mode=gameMode;if(!username){setStatus('Save your username first.');return}if(!confirm('Delete your '+mode+' leaderboard record for '+username+'? This cannot be undone.'))return;try{const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/delete_player_scores',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_player_id:playerId(),p_mode:mode})});if(!r.ok)throw new Error((await r.text()).slice(0,180));for(const key of mode==='beginner'?[BEGINNER_BEST_KEY,BEGINNER_SENT_KEY]:[BEST_KEY,SENT_KEY])localStorage.removeItem(key);setStatus('Your '+mode+' leaderboard record was deleted. The other mode is unchanged.');await refreshBoard(mode)}catch(e){setStatus('Could not delete record: '+e.message)}});
 
-refreshBoard();
+syncGameModeControls();syncBoardControls();syncSlowControls();refreshBoard();
 
 // Creator panel: read-only tools. The UI gate is not a security boundary because browser code is public.
 $('adminSetCoins').addEventListener('click',()=>{const field=$('adminCoinAmount'),raw=field.value.trim(),amount=Number(raw),status=$('creatorLocalStatus');if(!/^\d+$/.test(raw)||!Number.isSafeInteger(amount)||amount<0){status.textContent='Enter a whole number from 0 to 9,007,199,254,740,991.';return}coinBank=amount;saveCosmetics();field.value='';status.textContent='Coin bank set to '+coinBank.toLocaleString()+' on this browser.'});
