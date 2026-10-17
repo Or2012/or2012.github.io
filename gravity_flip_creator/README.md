@@ -73,6 +73,6 @@ Open **Creator / Admin Panel** in the sidebar and enter the creator code: `ora12
 
 ## Game modes and Beginner leaderboard
 
-- Classic and Beginner have separate global leaderboards. Beginner uses a smaller collision hitbox; the optional Slow button runs gameplay and score progression at 0.5x speed.
+- Classic and Beginner have separate global leaderboards. Beginner uses a smaller collision hitbox and automatically enables slow motion. Configure its speed from 0.25x to 0.75x; gameplay and score progression use the same speed multiplier.
 - For an existing Supabase project, apply `beginner_mode_migration.sql` once in the Supabase SQL Editor to create the empty Beginner board and keep username changes and record deletion working across both boards. The existing Classic leaderboard data is preserved.
 - The later `delete_selected_mode_migration.sql` replaces the earlier all-board delete function. Apply it after `beginner_mode_migration.sql` when setting up an existing database.
