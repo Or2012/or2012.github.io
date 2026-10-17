@@ -2,11 +2,18 @@
 
 This folder turns Gravity Flip into a public browser game with a shared global Top 100 leaderboard.
 
+## Publish and preview this game
+
+- GitHub Actions publishes the playable site from `gravity_flip_creator/` whenever code is pushed to `main`. This is plain HTML, CSS, and JavaScript, so there is no compile step.
+- In the repository's **Settings > Pages**, set the source to **GitHub Actions** once. After the first successful workflow run, GitHub shows the Pages URL there.
+- To preview locally without uploading anything, open the repository folder and double-click `Run Local Game.bat`. It opens `http://127.0.0.1:8000/` and starts a small local web server. Keep the server window open while playing; press Ctrl+C there to stop it. Python 3 must be installed.
+- Local edits appear when you refresh the browser. They are not published until you commit and push them.
+
 ## What you'll use (free tiers)
-- **Netlify Drop** to publish the game as a website.
+- **GitHub Pages** with GitHub Actions to publish the game.
 - **Supabase** to store scores in a shared online database.
 
-No Python, command prompt, build tools, or paid domain is required. Netlify gives you a public `*.netlify.app` address.
+GitHub Actions publishes the static game files automatically after you push to `main`. Local preview uses Python 3; see the instructions above.
 
 ## Part A — Create the global leaderboard database
 
@@ -17,24 +24,17 @@ No Python, command prompt, build tools, or paid domain is required. Netlify give
 5. Copy your **Project URL** and the **anon/public key**. Depending on the dashboard version, the public key may be called `anon` or `publishable`.
    - Never use or share the `service_role` or secret key in the website.
 
-## Part B — Connect the website
+## Part B - Database connection
 
-1. Open `index.html` in Notepad or another text editor.
-2. Near the top of its `<script>`, find:
-   `const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";`
-   and paste your Project URL between the quotes.
-3. Find:
-   `const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";`
-   and paste the anon/public key between the quotes.
-4. Save the file. Keep the quotes around both values.
+The playable game in `gravity_flip_creator/index.html` is already configured for the current Supabase project. Its publishable key is intended for browser use; keep the database protected with the existing Row Level Security policies. Do not put a service-role or secret key in the game.
 
-## Part C — Publish the game for free
+## Part C - Publish with GitHub Pages
 
-1. Make a folder named `gravity-flip-site`.
-2. Put `index.html` inside it. You can also put `robots.txt` and `supabase_setup.sql` there, but only `index.html` is required for the game.
-3. Open https://app.netlify.com/drop in your browser and sign in/create a free account.
-4. Drag the `gravity-flip-site` folder onto the Netlify Drop page (or zip the folder and upload the zip if the page asks for that).
-5. Netlify will give you a public URL such as `https://your-game-name.netlify.app`. Open it and test the game.
+1. This repository includes a GitHub Actions workflow that publishes the playable files from `gravity_flip_creator/`.
+2. On GitHub, open the repository's **Settings > Pages** and choose **GitHub Actions** as the source.
+3. Push changes to the `main` branch. The workflow deploys the game automatically; it does not need a compile step.
+4. After the first successful run, open **Settings > Pages** to see the public game URL.
+
 
 ## Test the global leaderboard
 
@@ -47,7 +47,7 @@ No Python, command prompt, build tools, or paid domain is required. Netlify give
 
 - Your game has a page title and description for search engines.
 - Share the public URL with people and add it to any profiles/pages you control.
-- Google indexing can take days or weeks and is not guaranteed. A free Netlify URL can be indexed; a custom domain is optional, not required.
+- Google indexing can take days or weeks and is not guaranteed. A GitHub Pages URL can be indexed; a custom domain is optional, not required.
 - You can later use Google Search Console to request indexing of the public URL.
 
 ## Important limitations / safety
@@ -69,4 +69,4 @@ No Python, command prompt, build tools, or paid domain is required. Netlify give
 The game has no login or email. A name is reserved in Supabase when the player clicks **Save / change username**, and it stays reserved while the player is offline. Name matching is case-insensitive. The reservation is linked to a random ID stored in that browser, so the same browser can return without signing in. If the browser storage is cleared or the player switches devices, there is no login-based recovery; because you asked for no login, this is not a strong identity system. A player changing names leaves the old name reserved.
 
 ## Creator panel
-Open **Creator / Admin Panel** in the sidebar and enter the creator code: `NOVA-OWNER-7429`. This is a read-only panel for viewing/exporting scores. Important: because this game is a static browser site, this code is visible in the downloaded page source and is not secure against determined users. Do not use it for private/destructive admin actions; server-side authentication is needed for that.
+Open **Creator / Admin Panel** in the sidebar and enter the creator code: `ora12`. This is a read-only panel for viewing/exporting scores. Important: because this game is a static browser site, this code is visible in the downloaded page source and is not secure against determined users. Do not use it for private/destructive admin actions; server-side authentication is needed for that.
